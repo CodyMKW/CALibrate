@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CALibrate</title>
+<meta name="description" content="Swap the Trainer House trainer CAL between two Pokémon Crystal save files, right in your browser.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 54 18v28L32 60 10 46V18z' fill='%237fe3ff'/%3E%3Cpath d='M32 4v56M10 18l44 28M54 18 10 46' stroke='%230c1226' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b1022;        /* page */
+  --deep:#111833;       /* panels */
+  --rim:#26305a;        /* borders */
+  --rim-hi:#3a4880;
+  --text:#e6eaff;
+  --mute:#93a0cf;
+  --crystal:#7fe3ff;    /* primary */
+  --amethyst:#a99bff;   /* secondary */
+  --gold:#ffcf5c;       /* CAL highlight */
+  --bad:#ff8a8a;
+  --ok:#8ff0b5;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --data:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{
+  margin:0;color:var(--text);background:
+    radial-gradient(900px 520px at 85% -10%,rgba(127,227,255,.10),transparent 60%),
+    radial-gradient(700px 480px at -10% 30%,rgba(169,155,255,.09),transparent 60%),
+    var(--ink);
+  font:400 17px/1.55 var(--display);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+a{color:var(--crystal)}
+:focus-visible{outline:2px solid var(--crystal);outline-offset:3px;border-radius:6px}
+
+/* masthead */
+header.top{padding:26px 0 0;display:flex;align-items:center;gap:12px}
+.mark{width:34px;height:34px;flex:none}
+.word{font-weight:800;font-size:22px;letter-spacing:-.01em}
+.word span{color:var(--crystal)}
+.tag{margin-left:auto;color:var(--mute);font-size:14px}
+
+/* hero */
+.hero{padding:64px 0 36px;max-width:760px}
+h1{font-weight:800;font-size:clamp(40px,7vw,76px);line-height:.98;letter-spacing:-.035em;margin:0 0 20px;font-variation-settings:"opsz" 96}
+.lede{font-size:19px;color:var(--mute);max-width:60ch;margin:0}
+.lede b{color:var(--text);font-weight:600}
+
+/* tool */
+.tool{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.slot{
+  position:relative;background:var(--deep);border:1px solid var(--rim);border-radius:14px;
+  padding:20px;min-height:210px;display:flex;flex-direction:column;gap:10px;
+  transition:border-color .15s, background .15s;
+}
+.slot.drag{border-color:var(--crystal);background:#14204a}
+.slot.loaded{border-color:var(--rim-hi)}
+.slot h2{margin:0;font-size:15px;font-weight:600;color:var(--mute);letter-spacing:.01em}
+.drop{
+  flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;
+  border:1.5px dashed var(--rim-hi);border-radius:10px;padding:18px;cursor:pointer;
+}
+.drop:hover{border-color:var(--crystal)}
+.drop strong{font-size:18px;font-weight:600}
+.drop small{color:var(--mute);font-size:14px}
+.slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.slot.loaded .drop{display:none}
+.info{display:none;flex-direction:column;gap:12px}
+.slot.loaded .info{display:flex}
+.who{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.who .name{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.who .file{font-family:var(--data);font-size:12.5px;color:var(--mute);overflow-wrap:anywhere}
+.party{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--data);font-size:12px;border:1px solid var(--rim-hi);border-radius:6px;padding:3px 8px;color:var(--text)}
+.chip em{font-style:normal;color:var(--mute)}
+.chip.egg{opacity:.55}
+.notes{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.warn{color:var(--gold)}
+.fail{color:var(--bad)}
+.good{color:var(--ok)}
+.swap-btn{
+  align-self:flex-start;background:none;border:0;color:var(--mute);font:inherit;font-size:14px;
+  text-decoration:underline;cursor:pointer;padding:6px 0;position:relative;z-index:2;
+}
+.swap-btn:hover{color:var(--text)}
+.slot .replace{position:relative;z-index:2}
+
+/* options */
+.opts{margin:18px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;color:var(--mute);font-size:15px}
+.seg{display:inline-flex;border:1px solid var(--rim-hi);border-radius:10px;overflow:hidden}
+.seg label{position:relative;padding:8px 14px;cursor:pointer;color:var(--text);font-size:15px}
+.seg input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.seg label:has(input:checked){background:var(--crystal);color:#06101f;font-weight:600}
+.seg label:has(input:focus-visible){outline:2px solid var(--amethyst);outline-offset:-3px}
+.seg label:has(input:disabled){opacity:.4;cursor:not-allowed}
+
+/* results */
+.results{display:none;margin:34px 0 0;grid-template-columns:1fr 1fr;gap:16px}
+.results.on{display:grid}
+.res{background:var(--deep);border:1px solid var(--rim);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:16px;animation:reveal .35s ease-out}
+@keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.res h3{margin:0;font-size:24px;line-height:1.15;letter-spacing:-.02em;font-weight:800}
+.res h3 .cal{color:var(--gold)}
+.res .sub{margin:-8px 0 0;color:var(--mute);font-size:14.5px}
+.team{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--rim);border-radius:10px;overflow:hidden}
+.team li{display:grid;grid-template-columns:minmax(110px,1.1fr) 56px 2fr;gap:10px;align-items:baseline;padding:9px 12px;font-family:var(--data);font-size:12.5px}
+.team li+li{border-top:1px solid var(--rim)}
+.team .sp{font-weight:600;color:var(--text)}
+.team .lv{color:var(--gold)}
+.team .mv{color:var(--mute)}
+.team .empty{display:block;color:var(--bad)}
+button.go{
+  font:600 16px var(--display);padding:12px 18px;border-radius:10px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--crystal),var(--amethyst));color:#06101f;align-self:flex-start;
+}
+button.go:hover{filter:brightness(1.08)}
+button.go:disabled{background:var(--rim);color:var(--mute);cursor:not-allowed;filter:none}
+.status{min-height:1.4em;font-size:14px;margin:14px 0 0;color:var(--mute)}
+
+/* details */
+section.more{margin:64px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.more h2{font-size:22px;letter-spacing:-.02em;margin:0 0 10px}
+.more p,.more li{color:var(--mute);font-size:16px;max-width:62ch}
+.more ol{padding-left:20px;margin:0}
+.more li{margin:6px 0}
+code,.mono{font-family:var(--data);font-size:.88em;color:var(--text)}
+table.map{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:6px}
+table.map td,table.map th{padding:7px 8px;border-bottom:1px solid var(--rim);text-align:left;vertical-align:top}
+table.map th{color:var(--mute);font-weight:600}
+table.map td:first-child{font-family:var(--data);white-space:nowrap}
+footer{margin:72px 0 40px;padding-top:20px;border-top:1px solid var(--rim);color:var(--mute);font-size:14px;max-width:80ch}
+
+@media (max-width:760px){
+  .tool,.results,section.more{grid-template-columns:1fr}
+  .hero{padding-top:40px}
+  .tag{display:none}
+  .team li{grid-template-columns:1fr 48px}
+  .team .mv{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){.res{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <svg class="mark" viewBox="0 0 64 64" role="img" aria-label="CALibrate logo">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fe3ff"/><stop offset="1" stop-color="#a99bff"/></linearGradient></defs>
+    <path d="M32 3 55 17v30L32 61 9 47V17z" fill="url(#g)"/>
+    <path d="M32 3v58M9 17l46 30M55 17 9 47" stroke="#0b1022" stroke-width="2.6" fill="none" stroke-linejoin="round"/>
+    <path d="M32 3 55 17 32 32 9 17z" fill="#fff" opacity=".22"/>
+  </svg>
+  <span class="word"><span>CAL</span>ibrate</span>
+  <span class="tag">A Pokémon Crystal save tool</span>
+</header>
+
+<main>
+<section class="hero">
+  <h1>Make CAL someone else.</h1>
+  <p class="lede">In Crystal, the Trainer House battle against <b>CAL</b> uses the team and name of whoever you last used Mystery Gift with. Load two Crystal saves and CALibrate writes each player's team into the other's game.</p>
+</section>
+
+<div class="tool" id="tool">
+  <div class="slot" data-slot="a">
+    <h2>Save A</h2>
+    <div class="drop"><strong>Drop a .sav file</strong><small>or click to choose one</small></div>
+    <input type="file" accept=".sav,.srm,.sa1,.bin" aria-label="Choose save file A">
+    <div class="info"></div>
+  </div>
+  <div class="slot" data-slot="b">
+    <h2>Save B</h2>
+    <div class="drop"><strong>Drop a .sav file</strong><small>or click to choose one</small></div>
+    <input type="file" accept=".sav,.srm,.sa1,.bin" aria-label="Choose save file B">
+    <div class="info"></div>
+  </div>
+</div>
+
+<div class="opts">
+  <span id="srcLabel">CAL copies</span>
+  <div class="seg" role="radiogroup" aria-labelledby="srcLabel">
+    <label><input type="radio" name="src" value="party" checked>The other player's party</label>
+    <label><input type="radio" name="src" value="stored">Their stored CAL</label>
+  </div>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">Load two saves to begin.</p>
+
+<div class="results" id="results"></div>
+
+<section class="more">
+  <div>
+    <h2>How it works</h2>
+    <ol>
+      <li>Reads the other save's player name and party the same way the game does during a Mystery Gift link: level, species and four moves per Pokémon, eggs skipped.</li>
+      <li>Writes that into the Mystery Gift block of your save, which is where the Trainer House reads CAL's team and name.</li>
+      <li>Sets the Trainer House flag, so CAL shows up even if you never linked.</li>
+    </ol>
+    <p>Everything runs in your browser. Your files are never uploaded. The page only changes 51 bytes, and the save's checksum doesn't cover them, so nothing else in the file moves.</p>
+  </div>
+  <div>
+    <h2>Bytes it touches</h2>
+    <table class="map">
+      <tr><th>Offset</th><th>Size</th><th>Field</th></tr>
+      <tr><td>0x0BFD</td><td>1</td><td>Trainer House flag</td></tr>
+      <tr><td>0x0BFE</td><td>11</td><td>CAL's name</td></tr>
+      <tr><td>0x0C09</td><td>1</td><td>Unused flag (set to 1)</td></tr>
+      <tr><td>0x0C0A</td><td>38</td><td>CAL's team: level, species, 4 moves, repeated, ends with 0xFF</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Unofficial fan tool. Not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company. Back up your saves before using any save editor. Layout notes come from the pret/pokecrystal disassembly.
+</footer>
+</div>
+
+<script>
+/* CORE:START */
+const SPECIES = ["?????", "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN\u2640", "NIDORINA", "NIDOQUEEN", "NIDORAN\u2642", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCH'D", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR.MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI", "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW", "CHIKORITA", "BAYLEEF", "MEGANIUM", "CYNDAQUIL", "QUILAVA", "TYPHLOSION", "TOTODILE", "CROCONAW", "FERALIGATR", "SENTRET", "FURRET", "HOOTHOOT", "NOCTOWL", "LEDYBA", "LEDIAN", "SPINARAK", "ARIADOS", "CROBAT", "CHINCHOU", "LANTURN", "PICHU", "CLEFFA", "IGGLYBUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "MAREEP", "FLAAFFY", "AMPHAROS", "BELLOSSOM", "MARILL", "AZUMARILL", "SUDOWOODO", "POLITOED", "HOPPIP", "SKIPLOOM", "JUMPLUFF", "AIPOM", "SUNKERN", "SUNFLORA", "YANMA", "WOOPER", "QUAGSIRE", "ESPEON", "UMBREON", "MURKROW", "SLOWKING", "MISDREAVUS", "UNOWN", "WOBBUFFET", "GIRAFARIG", "PINECO", "FORRETRESS", "DUNSPARCE", "GLIGAR", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCIZOR", "SHUCKLE", "HERACROSS", "SNEASEL", "TEDDIURSA", "URSARING", "SLUGMA", "MAGCARGO", "SWINUB", "PILOSWINE", "CORSOLA", "REMORAID", "OCTILLERY", "DELIBIRD", "MANTINE", "SKARMORY", "HOUNDOUR", "HOUNDOOM", "KINGDRA", "PHANPY", "DONPHAN", "PORYGON2", "STANTLER", "SMEARGLE", "TYROGUE", "HITMONTOP", "SMOOCHUM", "ELEKID", "MAGBY", "MILTANK", "BLISSEY", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "TYRANITAR", "LUGIA", "HO-OH", "CELEBI"];
+const MOVES = ["\u2014", "POUND", "KARATE CHOP", "DOUBLESLAP", "COMET PUNCH", "MEGA PUNCH", "PAY DAY", "FIRE PUNCH", "ICE PUNCH", "THUNDERPUNCH", "SCRATCH", "VICEGRIP", "GUILLOTINE", "RAZOR WIND", "SWORDS DANCE", "CUT", "GUST", "WING ATTACK", "WHIRLWIND", "FLY", "BIND", "SLAM", "VINE WHIP", "STOMP", "DOUBLE KICK", "MEGA KICK", "JUMP KICK", "ROLLING KICK", "SAND-ATTACK", "HEADBUTT", "HORN ATTACK", "FURY ATTACK", "HORN DRILL", "TACKLE", "BODY SLAM", "WRAP", "TAKE DOWN", "THRASH", "DOUBLE-EDGE", "TAIL WHIP", "POISON STING", "TWINEEDLE", "PIN MISSILE", "LEER", "BITE", "GROWL", "ROAR", "SING", "SUPERSONIC", "SONICBOOM", "DISABLE", "ACID", "EMBER", "FLAMETHROWER", "MIST", "WATER GUN", "HYDRO PUMP", "SURF", "ICE BEAM", "BLIZZARD", "PSYBEAM", "BUBBLEBEAM", "AURORA BEAM", "HYPER BEAM", "PECK", "DRILL PECK", "SUBMISSION", "LOW KICK", "COUNTER", "SEISMIC TOSS", "STRENGTH", "ABSORB", "MEGA DRAIN", "LEECH SEED", "GROWTH", "RAZOR LEAF", "SOLARBEAM", "POISONPOWDER", "STUN SPORE", "SLEEP POWDER", "PETAL DANCE", "STRING SHOT", "DRAGON RAGE", "FIRE SPIN", "THUNDERSHOCK", "THUNDERBOLT", "THUNDER WAVE", "THUNDER", "ROCK THROW", "EARTHQUAKE", "FISSURE", "DIG", "TOXIC", "CONFUSION", "PSYCHIC", "HYPNOSIS", "MEDITATE", "AGILITY", "QUICK ATTACK", "RAGE", "TELEPORT", "NIGHT SHADE", "MIMIC", "SCREECH", "DOUBLE TEAM", "RECOVER", "HARDEN", "MINIMIZE", "SMOKESCREEN", "CONFUSE RAY", "WITHDRAW", "DEFENSE CURL", "BARRIER", "LIGHT SCREEN", "HAZE", "REFLECT", "FOCUS ENERGY", "BIDE", "METRONOME", "MIRROR MOVE", "SELFDESTRUCT", "EGG BOMB", "LICK", "SMOG", "SLUDGE", "BONE CLUB", "FIRE BLAST", "WATERFALL", "CLAMP", "SWIFT", "SKULL BASH", "SPIKE CANNON", "CONSTRICT", "AMNESIA", "KINESIS", "SOFTBOILED", "HI JUMP KICK", "GLARE", "DREAM EATER", "POISON GAS", "BARRAGE", "LEECH LIFE", "LOVELY KISS", "SKY ATTACK", "TRANSFORM", "BUBBLE", "DIZZY PUNCH", "SPORE", "FLASH", "PSYWAVE", "SPLASH", "ACID ARMOR", "CRABHAMMER", "EXPLOSION", "FURY SWIPES", "BONEMERANG", "REST", "ROCK SLIDE", "HYPER FANG", "SHARPEN", "CONVERSION", "TRI ATTACK", "SUPER FANG", "SLASH", "SUBSTITUTE", "STRUGGLE", "SKETCH", "TRIPLE KICK", "THIEF", "SPIDER WEB", "MIND READER", "NIGHTMARE", "FLAME WHEEL", "SNORE", "CURSE", "FLAIL", "CONVERSION2", "AEROBLAST", "COTTON SPORE", "REVERSAL", "SPITE", "POWDER SNOW", "PROTECT", "MACH PUNCH", "SCARY FACE", "FAINT ATTACK", "SWEET KISS", "BELLY DRUM", "SLUDGE BOMB", "MUD-SLAP", "OCTAZOOKA", "SPIKES", "ZAP CANNON", "FORESIGHT", "DESTINY BOND", "PERISH SONG", "ICY WIND", "DETECT", "BONE RUSH", "LOCK-ON", "OUTRAGE", "SANDSTORM", "GIGA DRAIN", "ENDURE", "CHARM", "ROLLOUT", "FALSE SWIPE", "SWAGGER", "MILK DRINK", "SPARK", "FURY CUTTER", "STEEL WING", "MEAN LOOK", "ATTRACT", "SLEEP TALK", "HEAL BELL", "RETURN", "PRESENT", "FRUSTRATION", "SAFEGUARD", "PAIN SPLIT", "SACRED FIRE", "MAGNITUDE", "DYNAMICPUNCH", "MEGAHORN", "DRAGONBREATH", "BATON PASS", "ENCORE", "PURSUIT", "RAPID SPIN", "SWEET SCENT", "IRON TAIL", "METAL CLAW", "VITAL THROW", "MORNING SUN", "SYNTHESIS", "MOONLIGHT", "HIDDEN POWER", "CROSS CHOP", "TWISTER", "RAIN DANCE", "SUNNY DAY", "CRUNCH", "MIRROR COAT", "PSYCH UP", "EXTREMESPEED", "ANCIENTPOWER", "SHADOW BALL", "FUTURE SIGHT", "ROCK SMASH", "WHIRLPOOL", "BEAT UP"];
+
+const OFF = {
+  check1:0x2008, check2:0x2D0F, dataStart:0x2009, dataEnd:0x2B83, checksum:0x2D0D,
+  playerName:0x200B, partyCount:0x2865, partySpecies:0x2866, partyMons:0x286D,
+  mgFlag:0x0BFD, mgName:0x0BFE, mgUnused:0x0C09, mgTrainer:0x0C0A
+};
+const NAME_LEN = 11, TRAINER_LEN = 38, MON_LEN = 48, SAVE_SIZE = 0x8000, EGG = 0xFD;
+
+function decodeName(bytes){
+  const out = [];
+  for (const b of bytes){
+    if (b === 0x50) break;
+    if (b >= 0x80 && b <= 0x99) out.push(String.fromCharCode(65 + b - 0x80));
+    else if (b >= 0xA0 && b <= 0xB9) out.push(String.fromCharCode(97 + b - 0xA0));
+    else if (b >= 0xF6 && b <= 0xFF) out.push(String(b - 0xF6));
+    else out.push({0x7F:' ',0xE0:"'",0xE3:'-',0xE6:'?',0xE7:'!',0xE8:'.',0xF4:',',0xBA:'é',0xEF:'♂',0xF5:'♀',0xF1:'×',0xF3:'/',0xE9:'&'}[b] ?? '?');
+  }
+  return out.join('').trim();
+}
+
+function checksumOf(d){
+  let s = 0;
+  for (let i = OFF.dataStart; i < OFF.dataEnd; i++) s = (s + d[i]) & 0xFFFF;
+  return s;
+}
+
+function parseSave(buf){
+  const d = new Uint8Array(buf);
+  if (d.length < SAVE_SIZE) return {error:'This file is smaller than a 32 KB Game Boy Color save.'};
+  if (d[OFF.check1] !== 0x63 || d[OFF.check2] !== 0x7F)
+    return {error:"This doesn't look like a Pokémon Crystal save. The Crystal check bytes are missing."};
+  const stored = d[OFF.checksum] | (d[OFF.checksum+1] << 8);
+  const checksumOk = stored === checksumOf(d);
+  const name = decodeName(d.subarray(OFF.playerName, OFF.playerName + NAME_LEN));
+  const count = Math.min(d[OFF.partyCount], 6);
+  const mons = [];
+  for (let i = 0; i < count; i++){
+    const sp = d[OFF.partySpecies + i];
+    if (sp === 0xFF) break;
+    const o = OFF.partyMons + i * MON_LEN;
+    mons.push({egg: sp === EGG, species: d[o], level: d[o+0x1F], moves: Array.from(d.subarray(o+2, o+6))});
+  }
+  const stored_cal = {
+    flag: d[OFF.mgFlag],
+    name: decodeName(d.subarray(OFF.mgName, OFF.mgName + NAME_LEN)),
+    team: parseTeam(d.subarray(OFF.mgTrainer, OFF.mgTrainer + TRAINER_LEN))
+  };
+  return {data:d, name, mons, checksumOk, stored:stored_cal,
+          rawName:d.slice(OFF.playerName, OFF.playerName + NAME_LEN)};
+}
+
+function parseTeam(t){
+  const team = [];
+  for (let i = 0; i + 5 < t.length && t[i] !== 0xFF && team.length < 6; i += 6){
+    if (t[i+1] === 0 || t[i+1] > 251) break;
+    team.push({level:t[i], species:t[i+1], moves:Array.from(t.subarray(i+2, i+6))});
+  }
+  return team;
+}
+
+/* Same output as the game's StagePartyDataForMysteryGift. */
+function buildTrainer(mons){
+  const out = new Uint8Array(TRAINER_LEN);
+  let p = 0;
+  for (const m of mons){
+    if (m.egg) continue;
+    out[p++] = m.level; out[p++] = m.species;
+    for (const mv of m.moves) out[p++] = mv;
+  }
+  out[p] = 0xFF;
+  return out;
+}
+
+/* Returns {bytes, name, team} or {error}. `target` is untouched. */
+function calibrate(target, source, mode){
+  let flag = 1, nameBytes, trainer;
+  if (mode === 'stored'){
+    if (source.stored.flag !== 1) return {error:`${source.name || 'That save'} has no stored Mystery Gift trainer.`};
+    flag = 1;
+    nameBytes = source.data.slice(OFF.mgName, OFF.mgName + NAME_LEN);
+    trainer = source.data.slice(OFF.mgTrainer, OFF.mgTrainer + TRAINER_LEN);
+  } else {
+    nameBytes = source.rawName;
+    trainer = buildTrainer(source.mons);
+  }
+  const team = parseTeam(trainer);
+  if (!team.length) return {error:`${source.name || 'That save'} has no battle-ready Pokémon, so CAL would have an empty team.`};
+  const out = new Uint8Array(target.data);
+  out[OFF.mgFlag] = flag;
+  out.set(nameBytes, OFF.mgName);
+  out[OFF.mgUnused] = 1;
+  out.set(trainer, OFF.mgTrainer);
+  return {bytes:out, name:decodeName(nameBytes), team};
+}
+/* CORE:END */
+
+const $ = (s, r=document) => r.querySelector(s);
+const saves = {a:null, b:null};
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mode = () => document.querySelector('input[name=src]:checked').value;
+
+function setStatus(msg, cls=''){ const s=$('#status'); s.textContent=msg; s.className='status '+cls; }
+
+function teamHtml(team){
+  return '<ul class="team">' + team.map(m =>
+    `<li><span class="sp">${esc(SPECIES[m.species] || 'UNKNOWN #'+m.species)}</span><span class="lv">Lv${m.level}</span><span class="mv">${
+      m.moves.filter(Boolean).map(x => esc(MOVES[x] || '#'+x)).join(', ') || 'no moves'}</span></li>`).join('') + '</ul>';
+}
+
+function renderSlot(key){
+  const slot = $(`.slot[data-slot=${key}]`), info = $('.info', slot), s = saves[key];
+  slot.classList.toggle('loaded', !!s);
+  if (!s){ info.innerHTML = ''; return; }
+  const chips = s.mons.map(m => m.egg
+    ? '<span class="chip egg">Egg</span>'
+    : `<span class="chip">${esc(SPECIES[m.species]||'?')} <em>Lv${m.level}</em></span>`).join('') || '<span class="chip egg">Empty party</span>';
+  const notes = [];
+  if (!s.checksumOk) notes.push('<span class="warn">Checksum doesn\'t match. The game may report this save as corrupted.</span>');
+  info.innerHTML = `<div class="who"><span class="name">${esc(s.name || '(no name)')}</span><span class="file">${esc(s.file)}</span></div>
+    <div class="party">${chips}</div><div class="notes">${notes.join('')}</div>
+    <button class="swap-btn replace" type="button" data-clear="${key}">Choose a different file</button>`;
+}
+
+function render(){
+  renderSlot('a'); renderSlot('b');
+  const res = $('#results'), a = saves.a, b = saves.b;
+  const storedRadio = document.querySelector('input[name=src][value=stored]');
+  res.className = 'results'; res.innerHTML = '';
+  if (!a || !b){ setStatus(a || b ? 'Load one more save.' : 'Load two saves to begin.'); return; }
+  storedRadio.disabled = false;
+  const jobs = [['a', a, b], ['b', b, a]];
+  const parts = []; const errors = [];
+  for (const [k, target, source] of jobs){
+    const r = calibrate(target, source, mode());
+    if (r.error){ errors.push(r.error); continue; }
+    target.out = r.bytes;
+    parts.push(`<article class="res">
+      <h3>${esc(target.name || 'Save '+k.toUpperCase())}'s <span class="cal">CAL</span> becomes ${esc(r.name || 'Trainer')}</h3>
+      <p class="sub">Save ${k.toUpperCase()} will meet this team in the Viridian Trainer House.</p>
+      ${teamHtml(r.team)}
+      <button class="go" type="button" data-dl="${k}">Download save ${k.toUpperCase()}</button></article>`);
+  }
+  res.innerHTML = parts.join('');
+  if (parts.length) res.classList.add('on');
+  if (errors.length) setStatus([...new Set(errors)].join(' '), 'fail');
+  else setStatus('Ready. Download either or both saves.', 'good');
+}
+
+function download(key){
+  const s = saves[key]; if (!s || !s.out) return;
+  const base = s.file.replace(/\.[^.]+$/, '');
+  const url = URL.createObjectURL(new Blob([s.out], {type:'application/octet-stream'}));
+  const a = document.createElement('a'); a.href = url; a.download = `${base}-calibrated.sav`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  setStatus(`Downloaded ${a.download}. Keep your original as a backup.`, 'good');
+}
+
+async function load(key, file){
+  if (!file) return;
+  const parsed = parseSave(await file.arrayBuffer());
+  if (parsed.error){ saves[key] = null; render(); setStatus(`${file.name}: ${parsed.error}`, 'fail'); return; }
+  parsed.file = file.name; saves[key] = parsed; render();
+}
+
+document.querySelectorAll('.slot').forEach(slot => {
+  const key = slot.dataset.slot, input = $('input', slot);
+  input.addEventListener('change', () => { load(key, input.files[0]); input.value = ''; });
+  ['dragenter','dragover'].forEach(e => slot.addEventListener(e, ev => { ev.preventDefault(); slot.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(e => slot.addEventListener(e, ev => { ev.preventDefault(); slot.classList.remove('drag'); }));
+  slot.addEventListener('drop', ev => load(key, ev.dataTransfer.files[0]));
+});
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-clear]'), d = e.target.closest('[data-dl]');
+  if (c){ saves[c.dataset.clear] = null; render(); $(`.slot[data-slot=${c.dataset.clear}] input`).click(); }
+  if (d) download(d.dataset.dl);
+});
+document.querySelectorAll('input[name=src]').forEach(r => r.addEventListener('change', render));
+</script>
+</body>
+</html>
