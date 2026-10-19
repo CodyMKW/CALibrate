@@ -8,7 +8,7 @@ Everything runs locally in your browser. Files are never uploaded.
 
 ## Usage
 
-1. Open `index.html` (or the hosted page).
+1. Open https://codymkw.github.io/CALibrate/ (or `index.html` locally).
 2. Drop a Crystal `.sav` into **Save A** and another into **Save B**.
 3. Choose what CAL copies:
    - **The other player's party** (default): builds CAL's team from the other save's current party, exactly as a real Mystery Gift link would.
@@ -65,9 +65,11 @@ Offsets are derived from the [pret/pokecrystal](https://github.com/pret/pokecrys
 - Built for international Crystal. Japanese Crystal and Gold/Silver have different layouts, and Gold/Silver have no Trainer House.
 - CAL's team uses the species, level and moves only. Held items, stats and nicknames are not part of the data, so he fights with default stats for those Pokémon.
 
-## Hosting
+## Try it
 
-It's one static file. Drop `index.html` into a repository and enable GitHub Pages, or upload it to any static host. The only external request is the Google Fonts stylesheet, and the page falls back to system fonts without it.
+https://codymkw.github.io/CALibrate/
+
+The only external request is the Google Fonts stylesheet. The page falls back to system fonts without it.
 
 ## Files
 
