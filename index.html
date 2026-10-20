@@ -90,7 +90,8 @@ h1{font-weight:800;font-size:clamp(40px,7vw,76px);line-height:.98;letter-spacing
   text-decoration:underline;cursor:pointer;padding:6px 0;position:relative;z-index:2;
 }
 .swap-btn:hover{color:var(--text)}
-.slot .replace{position:relative;z-index:2}
+.slot .replace,.slot .alt{position:relative;z-index:2}
+.drop .alt{margin-top:10px;color:var(--gold)}
 
 /* options */
 .opts{margin:18px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;color:var(--mute);font-size:15px}
@@ -176,7 +177,8 @@ footer{margin:72px 0 40px;padding-top:20px;border-top:1px solid var(--rim);color
   </div>
   <div class="slot" data-slot="b">
     <h2>Save B</h2>
-    <div class="drop"><strong>Drop a .sav file</strong><small>or click to choose one</small></div>
+    <div class="drop"><strong>Drop a .sav file</strong><small>or click to choose one</small>
+      <button class="swap-btn alt" type="button" data-claude>No second save? Face Grand Master Claude</button></div>
     <input type="file" accept=".sav,.srm,.sa1,.bin" aria-label="Choose save file B">
     <div class="info"></div>
   </div>
@@ -318,6 +320,35 @@ function calibrate(target, source, mode){
   out.set(trainer, OFF.mgTrainer);
   return {bytes:out, name:decodeName(nameBytes), team};
 }
+
+/* Built-in opponent. Names are limited to 10 characters, so the game shows "GM Claude". */
+const GM_CLAUDE = {
+  name: 'GM Claude', title: 'Grand Master Claude',
+  team: [
+    ['TYRANITAR', ['ROCK SLIDE', 'CRUNCH', 'EARTHQUAKE', 'PURSUIT']],
+    ['STARMIE',   ['SURF', 'PSYCHIC', 'THUNDERBOLT', 'RECOVER']],
+    ['ZAPDOS',    ['THUNDER', 'HIDDEN POWER', 'DRILL PECK', 'REST']],
+    ['SNORLAX',   ['DOUBLE-EDGE', 'EARTHQUAKE', 'CURSE', 'REST']],
+    ['SKARMORY',  ['DRILL PECK', 'STEEL WING', 'REST', 'SLEEP TALK']],
+    ['BLISSEY',   ['SOFTBOILED', 'ICE BEAM', 'THUNDER WAVE', 'COUNTER']]
+  ]
+};
+
+function encodeName(str){
+  const out = new Uint8Array(NAME_LEN).fill(0x50);
+  [...str].slice(0, NAME_LEN - 1).forEach((c, i) => {
+    out[i] = c === ' ' ? 0x7F : c >= 'A' && c <= 'Z' ? 0x80 + c.charCodeAt(0) - 65 : 0xA0 + c.charCodeAt(0) - 97;
+  });
+  return out;
+}
+
+function makeClaude(){
+  const mons = GM_CLAUDE.team.map(([sp, mv]) => ({
+    egg: false, level: 100, species: SPECIES.indexOf(sp), moves: mv.map(m => MOVES.indexOf(m))
+  }));
+  return {preset: true, name: GM_CLAUDE.name, title: GM_CLAUDE.title, mons, rawName: encodeName(GM_CLAUDE.name),
+          checksumOk: true, file: 'Built-in opponent'};
+}
 /* CORE:END */
 
 const $ = (s, r=document) => r.querySelector(s);
@@ -342,9 +373,10 @@ function renderSlot(key){
     : `<span class="chip">${esc(SPECIES[m.species]||'?')} <em>Lv${m.level}</em></span>`).join('') || '<span class="chip egg">Empty party</span>';
   const notes = [];
   if (!s.checksumOk) notes.push('<span class="warn">Checksum doesn\'t match. The game may report this save as corrupted.</span>');
-  info.innerHTML = `<div class="who"><span class="name">${esc(s.name || '(no name)')}</span><span class="file">${esc(s.file)}</span></div>
+  info.innerHTML = `<div class="who"><span class="name">${esc(s.title || s.name || '(no name)')}</span><span class="file">${esc(s.file)}</span></div>
     <div class="party">${chips}</div><div class="notes">${notes.join('')}</div>
-    <button class="swap-btn replace" type="button" data-clear="${key}">Choose a different file</button>`;
+    <button class="swap-btn replace" type="button" data-clear="${key}">${s.preset ? 'Choose a save file instead' : 'Choose a different file'}</button>
+    ${key === 'b' && !s.preset ? '<button class="swap-btn alt" type="button" data-claude>Face Grand Master Claude instead</button>' : ''}`;
 }
 
 function render(){
@@ -352,24 +384,27 @@ function render(){
   const res = $('#results'), a = saves.a, b = saves.b;
   const storedRadio = document.querySelector('input[name=src][value=stored]');
   res.className = 'results'; res.innerHTML = '';
-  if (!a || !b){ setStatus(a || b ? 'Load one more save.' : 'Load two saves to begin.'); return; }
-  storedRadio.disabled = false;
-  const jobs = [['a', a, b], ['b', b, a]];
+  storedRadio.disabled = !!(b && b.preset);
+  if (!a || !b){
+    setStatus(b && b.preset ? 'Load your save in Save A to face Grand Master Claude.' : a || b ? 'Load one more save, or face Grand Master Claude.' : 'Load two saves to begin.');
+    return;
+  }
+  const jobs = b.preset ? [['a', a, b]] : [['a', a, b], ['b', b, a]];
   const parts = []; const errors = [];
   for (const [k, target, source] of jobs){
-    const r = calibrate(target, source, mode());
+    const r = calibrate(target, source, source.preset ? 'party' : mode());
     if (r.error){ errors.push(r.error); continue; }
     target.out = r.bytes;
     parts.push(`<article class="res">
-      <h3>${esc(target.name || 'Save '+k.toUpperCase())}'s <span class="cal">CAL</span> becomes ${esc(r.name || 'Trainer')}</h3>
-      <p class="sub">Save ${k.toUpperCase()} will meet this team in the Viridian Trainer House.</p>
+      <h3>${esc(target.name || 'Save '+k.toUpperCase())}'s <span class="cal">CAL</span> becomes ${esc(source.title || r.name || 'Trainer')}</h3>
+      <p class="sub">Save ${k.toUpperCase()} will meet this team in the Viridian Trainer House.${source.preset ? ' The game shows his name as GM Claude, because names max out at 10 characters.' : ''}</p>
       ${teamHtml(r.team)}
       <button class="go" type="button" data-dl="${k}">Download save ${k.toUpperCase()}</button></article>`);
   }
   res.innerHTML = parts.join('');
   if (parts.length) res.classList.add('on');
   if (errors.length) setStatus([...new Set(errors)].join(' '), 'fail');
-  else setStatus('Ready. Download either or both saves.', 'good');
+  else setStatus(b.preset ? 'Ready. Download your save and go find the Trainer House.' : 'Ready. Download either or both saves.', 'good');
 }
 
 function download(key){
@@ -396,7 +431,8 @@ document.querySelectorAll('.slot').forEach(slot => {
   slot.addEventListener('drop', ev => load(key, ev.dataTransfer.files[0]));
 });
 document.addEventListener('click', e => {
-  const c = e.target.closest('[data-clear]'), d = e.target.closest('[data-dl]');
+  const c = e.target.closest('[data-clear]'), d = e.target.closest('[data-dl]'), g = e.target.closest('[data-claude]');
+  if (g){ saves.b = makeClaude(); render(); return; }
   if (c){ saves[c.dataset.clear] = null; render(); $(`.slot[data-slot=${c.dataset.clear}] input`).click(); }
   if (d) download(d.dataset.dl);
 });
