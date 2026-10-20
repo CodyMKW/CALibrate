@@ -9,7 +9,7 @@ Everything runs locally in your browser. Files are never uploaded.
 ## Usage
 
 1. Open https://codymkw.github.io/CALibrate/ (or `index.html` locally).
-2. Drop a Crystal `.sav` into **Save A** and another into **Save B**.
+2. Drop a Crystal `.sav` into **Save A** and another into **Save B**. No second save? Click **Face Grand Master Claude** instead (see below).
 3. Choose what CAL copies:
    - **The other player's party** (default): builds CAL's team from the other save's current party, exactly as a real Mystery Gift link would.
    - **Their stored CAL**: copies whatever Mystery Gift trainer the other save already has stored. Only available if that save has one.
@@ -17,6 +17,21 @@ Everything runs locally in your browser. Files are never uploaded.
 5. Load the patched save in your emulator or flash cart and visit the Trainer House in Viridian City.
 
 Back up your original saves first. The tool never modifies your originals, but the patched file replaces nothing until you copy it over.
+
+## Grand Master Claude
+
+A built-in opponent for when you don't have a second save. Your CAL becomes **GM Claude** (the game limits names to 10 characters), with a Lv100 team and fixed moves:
+
+| Pokémon | Moves |
+|---------|-------|
+| Tyranitar | Rock Slide, Crunch, Earthquake, Pursuit |
+| Starmie | Surf, Psychic, Thunderbolt, Recover |
+| Zapdos | Thunder, Hidden Power, Drill Peck, Rest |
+| Snorlax | Double-Edge, Earthquake, Curse, Rest |
+| Skarmory | Drill Peck, Steel Wing, Rest, Sleep Talk |
+| Blissey | Softboiled, Ice Beam, Thunder Wave, Counter |
+
+Only your own save is patched in this mode.
 
 ## What it changes
 
