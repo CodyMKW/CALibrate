@@ -9,7 +9,7 @@ Everything runs locally in your browser. Files are never uploaded.
 ## Usage
 
 1. Open https://codymkw.github.io/CALibrate/ (or `index.html` locally).
-2. Drop a Crystal `.sav` into **Save A** and another into **Save B**. No second save? Click **Face Grand Master Claude** instead (see below).
+2. Drop a Crystal `.sav` into **Save A** and another into **Save B**. No second save? Pick a built-in opponent instead (see below).
 3. Choose what CAL copies:
    - **The other player's party** (default): builds CAL's team from the other save's current party, exactly as a real Mystery Gift link would.
    - **Their stored CAL**: copies whatever Mystery Gift trainer the other save already has stored. Only available if that save has one.
@@ -18,9 +18,13 @@ Everything runs locally in your browser. Files are never uploaded.
 
 Back up your original saves first. The tool never modifies your originals, but the patched file replaces nothing until you copy it over.
 
-## Grand Master Claude
+## Built-in opponents
 
-A built-in opponent for when you don't have a second save. Your CAL becomes **GM Claude** (the game limits names to 10 characters), with a Lv100 team and fixed moves:
+No second save? Choose one of these and only your own save gets patched.
+
+### Grand Master Claude
+
+Your CAL becomes **GM Claude** (the game limits names to 10 characters), with a Lv100 team and fixed moves:
 
 | Pokémon | Moves |
 |---------|-------|
@@ -31,7 +35,18 @@ A built-in opponent for when you don't have a second save. Your CAL becomes **GM
 | Skarmory | Drill Peck, Steel Wing, Rest, Sleep Talk |
 | Blissey | Softboiled, Ice Beam, Thunder Wave, Counter |
 
-Only your own save is patched in this mode.
+### Cody's team
+
+A hand-built team that is not fair on purpose. Each Pokémon runs Lv100 with moves it could never learn in the game, such as Blastoise with Hyper Beam and Mega Punch, Pikachu with Fly and Blizzard, and Celebi with Perish Song. The game doesn't check move legality, so CAL uses them as written. The page shows a warning when you pick this team.
+
+| Pokémon | Moves |
+|---------|-------|
+| Blastoise | Surf, Mega Punch, Thunderbolt, Hyper Beam |
+| Pikachu | Fly, Psychic, Flamethrower, Blizzard |
+| Alakazam | Submission, Recover, Ice Beam, Confuse Ray |
+| Tyranitar | ExtremeSpeed, AncientPower, Shadow Ball, Triple Kick |
+| Dragonite | DragonBreath, Zap Cannon, Crunch, Metronome |
+| Celebi | Hyper Beam, Perish Song, Moonlight, Hypnosis |
 
 ## What it changes
 
